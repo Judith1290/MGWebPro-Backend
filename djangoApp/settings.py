@@ -82,7 +82,7 @@ WSGI_APPLICATION = 'djangoApp.wsgi.application'
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.mysql",
-        "NAME": "mgwebpro-db",
+        "NAME": "store-db",
         "USER": "root",
         "PASSWORD": "root",
         "HOST": "mysql",

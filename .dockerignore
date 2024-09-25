@@ -1,2 +1,4 @@
 staticfiles/
 __pycache__/
+.gitignore
+.dockerignore
