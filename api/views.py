@@ -9,8 +9,13 @@ from rest_framework.decorators import api_view
 from rest_framework.exceptions import AuthenticationFailed
 from rest_framework.response import Response
 
-from .models import Producto, Usuario
-from .serializers import ProductoSerializer, UsuarioSerializer
+from .models import Categoria, Modelo, Producto, Usuario
+from .serializers import (
+    CategoriaSerializer,
+    ModeloSerializer,
+    ProductoSerializer,
+    UsuarioSerializer,
+)
 from .utils import has_permissions
 
 
@@ -108,6 +113,94 @@ def products_view(request, pk=None):
 
         product = get_object_or_404(Producto, producto_id=pk)
         serializer = ProductoSerializer(product, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
+
+
+@api_view(["GET", "POST", "PATCH"])
+def products_models_view(request, pk=None):
+    token = request.COOKIES.get("session")
+
+    if request.method == "GET":
+        if pk:
+            model = get_object_or_404(Modelo, modelo_id=pk)
+            serializer = ModeloSerializer(instance=model)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+        models = Modelo.objects.all()
+        serializer = ModeloSerializer(models, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    elif request.method == "POST":
+        if not has_permissions(token=token, roles=(1, 2)):
+            return Response(
+                {"error": "You do not have permissions to perform this action"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        serializer = ModeloSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    elif request.method == "PATCH":
+        if not has_permissions(token=token, roles=(1, 2)):
+            return Response(
+                {"error": "You do not have permissions to perform this action"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        model = get_object_or_404(Modelo, modelo_id=pk)
+        serializer = ModeloSerializer(model, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
+
+
+@api_view(["GET", "POST", "PATCH"])
+def products_categories_view(request, pk=None):
+    token = request.COOKIES.get("session")
+
+    if request.method == "GET":
+        if pk:
+            category = get_object_or_404(Categoria, categoria_id=pk)
+            serializer = CategoriaSerializer(instance=category)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+        categories = Categoria.objects.all()
+        serializer = CategoriaSerializer(categories, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    elif request.method == "POST":
+        if not has_permissions(token=token, roles=(1, 2)):
+            return Response(
+                {"error": "You do not have permissions to perform this action"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        serializer = CategoriaSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    elif request.method == "PATCH":
+        if not has_permissions(token=token, roles=(1, 2)):
+            return Response(
+                {"error": "You do not have permissions to perform this action"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        category = get_object_or_404(Categoria, categoria_id=pk)
+        serializer = CategoriaSerializer(category, data=request.data)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
