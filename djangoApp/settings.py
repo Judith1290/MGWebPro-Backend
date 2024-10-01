@@ -33,6 +33,7 @@ CORS_ALLOWED_ORIGINS = [
     "http://react_app:5173",
 ]
 
+CORS_ALLOW_CREDENTIALS = True
 
 # Application definition
 
