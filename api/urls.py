@@ -1,5 +1,18 @@
-from django.urls import include, path
+from django.urls import path
 
-from .router import router_post
+from .views import (
+    login_view,
+    logout_view,
+    products_view,
+    register_view,
+    user_view,
+)
 
-urlpatterns = [path("", include(router_post.urls))]
+urlpatterns = [
+    path("user/register/", register_view, name="register"),
+    path("user/login/", login_view, name="login"),
+    path("user/logout/", logout_view, name="logout"),
+    path("user/details/", user_view, name="details"),
+    path("product/", products_view, name="products"),
+    path("product/<int:pk>/", products_view, name="product"),
+]
