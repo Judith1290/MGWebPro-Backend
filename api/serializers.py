@@ -1,6 +1,6 @@
 from rest_framework.serializers import ModelSerializer
 
-from .models import Usuario
+from .models import Producto, Usuario
 
 
 class UsuarioSerializer(ModelSerializer):
@@ -18,3 +18,9 @@ class UsuarioSerializer(ModelSerializer):
 
         user.save()
         return user
+
+
+class ProductoSerializer(ModelSerializer):
+    class Meta:
+        model = Producto
+        fields = "__all__"

@@ -9,8 +9,9 @@ from rest_framework.decorators import api_view
 from rest_framework.exceptions import AuthenticationFailed
 from rest_framework.response import Response
 
-from .models import Usuario
-from .serializers import UsuarioSerializer
+from .models import Producto, Usuario
+from .serializers import ProductoSerializer, UsuarioSerializer
+from .utils import has_permissions
 
 
 @api_view(["POST"])
@@ -70,3 +71,47 @@ def user_view(request):
     serializer = UsuarioSerializer(instance=user)
 
     return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+@api_view(["GET", "POST", "PATCH"])
+def products_view(request, pk=None):
+    token = request.COOKIES.get("session")
+
+    if request.method == "GET":
+        if pk:
+            product = get_object_or_404(Producto, producto_id=pk)
+            serializer = ProductoSerializer(instance=product)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+        products = Producto.objects.all()
+        serializer = ProductoSerializer(products, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    elif request.method == "POST":
+        if not has_permissions(token=token, roles=(1, 2)):
+            return Response(
+                {"error": "You do not have permissions to perform this action"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        serializer = ProductoSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    elif request.method == "PATCH":
+        if not has_permissions(token=token, roles=(1, 2)):
+            return Response(
+                {"error": "You do not have permissions to perform this action"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        product = get_object_or_404(Producto, producto_id=pk)
+        serializer = ProductoSerializer(product, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)

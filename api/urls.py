@@ -1,10 +1,18 @@
-from django.urls import re_path
+from django.urls import path
 
-from .views import login_view, logout_view, register_view, user_view
+from .views import (
+    login_view,
+    logout_view,
+    products_view,
+    register_view,
+    user_view,
+)
 
 urlpatterns = [
-    re_path(route="user/register", view=register_view),
-    re_path(route="user/login", view=login_view),
-    re_path(route="user/logout", view=logout_view),
-    re_path(route="user/details", view=user_view),
+    path("user/register/", register_view, name="register"),
+    path("user/login/", login_view, name="login"),
+    path("user/logout/", logout_view, name="logout"),
+    path("user/details/", user_view, name="details"),
+    path("product/", products_view, name="products"),
+    path("product/<int:pk>/", products_view, name="product"),
 ]
