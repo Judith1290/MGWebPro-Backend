@@ -188,3 +188,44 @@ def products_categories_view(request, pk=None):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
+
+
+@api_view(["GET", "POST", "PATCH"])
+@authentication_classes([CookieAuthentication])
+@permission_classes([IsAuthenticatedOrReadOnly])
+def reviews_view(request, product_id=None, review_id=None):
+    if request.method == "GET":
+        if review_id:
+            review = get_object_or_404(
+                Resena, producto_id=product_id, resena_id=review_id
+            )
+            serializer = ResenaSerializer(instance=review)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+        reviews = Resena.objects.filter(producto_id=product_id)
+        serializer = ResenaSerializer(reviews, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    elif request.method == "POST":
+        serializer = ResenaSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save(user_id=request.user.user_id, producto_id=product_id)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    elif request.method == "PATCH":
+        review = get_object_or_404(Resena, resena_id=review_id)
+
+        if not review.user_id == request.user.user_id:
+            return Response(
+                {"detail": "Only the review owner can edit it."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        serializer = ResenaSerializer(review, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
