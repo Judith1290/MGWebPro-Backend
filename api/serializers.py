@@ -10,6 +10,7 @@ class UsuarioSerializer(ModelSerializer):
         extra_kwargs = {"password": {"write_only": True}}
 
     def create(self, validated_data):
+        validated_data["rol_id"] = 3
         password = validated_data.pop("password", None)
         user = self.Meta.model(**validated_data)
 
