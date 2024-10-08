@@ -1,22 +1,26 @@
-import uuid
 from datetime import datetime, timedelta
 
 import jwt
 from django.contrib.auth.models import update_last_login
 from django.shortcuts import get_object_or_404
 from rest_framework import status
-from rest_framework.decorators import api_view
-from rest_framework.exceptions import AuthenticationFailed
+from rest_framework.decorators import (
+    api_view,
+    authentication_classes,
+    permission_classes,
+)
+from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
 from rest_framework.response import Response
 
-from .models import Categoria, Modelo, Producto, Usuario
+from .authentication import CookieAuthentication
+from .models import Categoria, Modelo, Producto, Resena, Usuario
 from .serializers import (
     CategoriaSerializer,
     ModeloSerializer,
     ProductoSerializer,
+    ResenaSerializer,
     UsuarioSerializer,
 )
-from .utils import has_permissions
 
 
 @api_view(["POST"])
@@ -36,7 +40,7 @@ def login_view(request):
 
     if not user.check_password(request.data["password"]):
         return Response(
-            {"error": "Invalid password"}, status=status.HTTP_400_BAD_REQUEST
+            {"detail": "Invalid password"}, status=status.HTTP_400_BAD_REQUEST
         )
 
     payload = {
@@ -57,31 +61,22 @@ def login_view(request):
 def logout_view(request):
     response = Response(status=status.HTTP_200_OK)
     response.delete_cookie("session")
-    response.data = {"message": "Cookie deleted successfully"}
+    response.data = {"detail": "Cookie deleted successfully"}
     return response
 
 
 @api_view(["GET"])
+@authentication_classes([CookieAuthentication])
+@permission_classes([IsAuthenticated])
 def user_view(request):
-    token = request.COOKIES.get("session")
-
-    if not token:
-        raise AuthenticationFailed("Unauthenticated")
-    try:
-        payload = jwt.decode(token, "secret", algorithms=["HS256"])
-    except jwt.ExpiredSignatureError:
-        raise AuthenticationFailed("Unauthenticated")
-
-    user = get_object_or_404(Usuario, user_id=uuid.UUID(payload["id"]))
-    serializer = UsuarioSerializer(instance=user)
-
+    serializer = UsuarioSerializer(instance=request.user)
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 @api_view(["GET", "POST", "PATCH"])
+@authentication_classes([CookieAuthentication])
+@permission_classes([IsAuthenticatedOrReadOnly])
 def products_view(request, pk=None):
-    token = request.COOKIES.get("session")
-
     if request.method == "GET":
         if pk:
             product = get_object_or_404(Producto, producto_id=pk)
@@ -91,13 +86,14 @@ def products_view(request, pk=None):
         products = Producto.objects.all()
         serializer = ProductoSerializer(products, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
-    elif request.method == "POST":
-        if not has_permissions(token=token, roles=(1, 2)):
-            return Response(
-                {"error": "You do not have permissions to perform this action"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
 
+    if request.user.rol_id not in (1, 2):
+        return Response(
+            {"detail": "You do not have permissions to perform this action."},
+            status=status.HTTP_401_UNAUTHORIZED,
+        )
+
+    if request.method == "POST":
         serializer = ProductoSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
@@ -105,12 +101,6 @@ def products_view(request, pk=None):
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     elif request.method == "PATCH":
-        if not has_permissions(token=token, roles=(1, 2)):
-            return Response(
-                {"error": "You do not have permissions to perform this action"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
         product = get_object_or_404(Producto, producto_id=pk)
         serializer = ProductoSerializer(product, data=request.data, partial=True)
         if serializer.is_valid():
@@ -123,9 +113,9 @@ def products_view(request, pk=None):
 
 
 @api_view(["GET", "POST", "PATCH"])
+@authentication_classes([CookieAuthentication])
+@permission_classes([IsAuthenticatedOrReadOnly])
 def products_models_view(request, pk=None):
-    token = request.COOKIES.get("session")
-
     if request.method == "GET":
         if pk:
             model = get_object_or_404(Modelo, modelo_id=pk)
@@ -135,13 +125,14 @@ def products_models_view(request, pk=None):
         models = Modelo.objects.all()
         serializer = ModeloSerializer(models, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
-    elif request.method == "POST":
-        if not has_permissions(token=token, roles=(1, 2)):
-            return Response(
-                {"error": "You do not have permissions to perform this action"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
 
+    if request.user.rol_id not in (1, 2):
+        return Response(
+            {"detail": "You do not have permissions to perform this action."},
+            status=status.HTTP_401_UNAUTHORIZED,
+        )
+
+    if request.method == "POST":
         serializer = ModeloSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
@@ -149,12 +140,6 @@ def products_models_view(request, pk=None):
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     elif request.method == "PATCH":
-        if not has_permissions(token=token, roles=(1, 2)):
-            return Response(
-                {"error": "You do not have permissions to perform this action"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
         model = get_object_or_404(Modelo, modelo_id=pk)
         serializer = ModeloSerializer(model, data=request.data)
         if serializer.is_valid():
@@ -167,9 +152,9 @@ def products_models_view(request, pk=None):
 
 
 @api_view(["GET", "POST", "PATCH"])
+@authentication_classes([CookieAuthentication])
+@permission_classes([IsAuthenticatedOrReadOnly])
 def products_categories_view(request, pk=None):
-    token = request.COOKIES.get("session")
-
     if request.method == "GET":
         if pk:
             category = get_object_or_404(Categoria, categoria_id=pk)
@@ -179,13 +164,14 @@ def products_categories_view(request, pk=None):
         categories = Categoria.objects.all()
         serializer = CategoriaSerializer(categories, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
-    elif request.method == "POST":
-        if not has_permissions(token=token, roles=(1, 2)):
-            return Response(
-                {"error": "You do not have permissions to perform this action"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
 
+    if request.user.rol_id not in (1, 2):
+        return Response(
+            {"detail": "You do not have permissions to perform this action."},
+            status=status.HTTP_401_UNAUTHORIZED,
+        )
+
+    if request.method == "POST":
         serializer = CategoriaSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
@@ -193,12 +179,6 @@ def products_categories_view(request, pk=None):
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     elif request.method == "PATCH":
-        if not has_permissions(token=token, roles=(1, 2)):
-            return Response(
-                {"error": "You do not have permissions to perform this action"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
         category = get_object_or_404(Categoria, categoria_id=pk)
         serializer = CategoriaSerializer(category, data=request.data)
         if serializer.is_valid():
