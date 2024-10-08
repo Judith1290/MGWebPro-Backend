@@ -9,7 +9,6 @@ class Roles(models.Model):
     nombre = models.CharField(max_length=20)
     rol_descripcion = models.TextField()
 
-
 class Usuario(AbstractUser):
     user_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     email = models.EmailField(unique=True)
@@ -42,3 +41,9 @@ class Producto(models.Model):
     is_active = models.BooleanField(default=True)
     categoria = models.ForeignKey(Categoria, on_delete=models.PROTECT, null=True)
     modelo = models.ForeignKey(Modelo, on_delete=models.PROTECT, null=True)
+
+class EmailCliend(models.Model):
+    name = models.CharField(max_length=20)
+    email = models.CharField(max_length=12)
+    phone = models.CharField(max_length=20)
+    masagge = models.TextField()

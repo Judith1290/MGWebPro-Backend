@@ -1,6 +1,6 @@
 from rest_framework.serializers import ModelSerializer
 
-from .models import Categoria, Modelo, Producto, Usuario
+from .models import Categoria, Modelo, Producto, Usuario, EmailCliend
 
 
 class UsuarioSerializer(ModelSerializer):
@@ -35,4 +35,9 @@ class ModeloSerializer(ModelSerializer):
 class CategoriaSerializer(ModeloSerializer):
     class Meta:
         model = Categoria
+        fields = "__all__"
+        
+class SendEmailSerializer(ModelSerializer):
+    class Meta:
+        model = EmailCliend
         fields = "__all__"

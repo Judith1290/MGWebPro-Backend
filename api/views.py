@@ -1,3 +1,5 @@
+# type: ignore
+from email.message import EmailMessage
 import uuid
 from datetime import datetime, timedelta
 from django.http import JsonResponse
@@ -15,8 +17,12 @@ from .serializers import (
     ModeloSerializer,
     ProductoSerializer,
     UsuarioSerializer,
+    SendEmailSerializer
 )
 from .utils import has_permissions
+from django.views.decorators.csrf import csrf_exempt
+import base64
+import json
 
 @api_view(["POST"])
 def register_view(request):
@@ -208,7 +214,55 @@ def products_categories_view(request, pk=None):
 
     return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
-@api_view(["POST"])
+@csrf_exempt
 def send_email_view(request):
-     return JsonResponse({"message": "Hello, world!"})
+    if request.method == 'POST':
+        try:
+            # Cargar los datos desde request.body (asumiendo que es JSON)
+            data = json.loads(request.body)
 
+            # Validar los datos usando el serializador
+            serializer = SendEmailSerializer(data=data)
+
+            # Si los datos son válidos, proceder
+            if serializer.is_valid():
+                # Extraer los datos validados
+                name = serializer.validated_data['name']
+                email = serializer.validated_data['email']
+                phone = serializer.validated_data['phone']
+                message_text = serializer.validated_data['message']
+
+                # Aquí puedes usar la función para enviar el correo
+                #creds, _ = google.auth.default()
+                credenciales = os.getenv('GOOGLE_APPLICATION_CREDENTIALS')
+                service_account.Credentials.from_service_account_file(credenciales)
+                service = build("gmail", "v1", credentials=creds)
+
+                # Crear mensaje de correo
+                message = EmailMessage()
+                message.set_content(f"Nombre: {name}\nEmail: {email}\nTeléfono: {phone}\n\nMensaje:\n{message_text}")
+                message["To"] = "tucorreo@example.com"  # Tu correo
+                message["From"] = "tuotrocorreo@example.com"
+                message["Subject"] = "Nuevo mensaje de contacto"
+
+                # Codificar el mensaje
+                encoded_message = base64.urlsafe_b64encode(message.as_bytes()).decode()
+
+                create_message = {"raw": encoded_message}
+
+                # Enviar el correo
+                send_message = service.users().messages().send(userId="me", body=create_message).execute()
+
+                return JsonResponse({"success": True, "message": "Correo enviado exitosamente."})
+
+            # Si los datos no son válidos, devolver los errores
+            return JsonResponse({"success": False, "errors": serializer.errors}, status=400)
+
+        except json.JSONDecodeError:
+            return JsonResponse({"success": False, "message": "Datos mal formateados."}, status=400)
+
+        except HttpError as error:
+            print(f"Error al enviar el correo: {error}")
+            return JsonResponse({"success": False, "message": "Error al enviar el correo."})
+
+    return JsonResponse({"success": False, "message": "Método no permitido."}, status=405)
