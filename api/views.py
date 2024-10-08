@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime, timedelta
-
+from django.http import JsonResponse
 import jwt
 from django.contrib.auth.models import update_last_login
 from django.shortcuts import get_object_or_404
@@ -17,7 +17,6 @@ from .serializers import (
     UsuarioSerializer,
 )
 from .utils import has_permissions
-
 
 @api_view(["POST"])
 def register_view(request):
@@ -208,3 +207,8 @@ def products_categories_view(request, pk=None):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
+
+@api_view(["POST"])
+def send_email_view(request):
+     return JsonResponse({"message": "Hello, world!"})
+
