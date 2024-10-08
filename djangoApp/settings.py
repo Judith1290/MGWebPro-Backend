@@ -27,11 +27,12 @@ DEBUG = True
 
 ALLOWED_HOSTS = []
 
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
-    "http://react_app:5173",
-]
+CORS_ALLOWED_ALL_ORIGINS = True
+# CORS_ALLOWED_ORIGINS = [
+#     "http://localhost:5173",
+#     "http://127.0.0.1:5173",
+#     "http://react_app:5173",
+# ]
 
 
 # Application definition
@@ -43,6 +44,10 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    "rest_framework",
+    "api.apps.ApiConfig",
+    "corsheaders",
+    'gmailapi_backend' ,
 ]
 
 MIDDLEWARE = [
@@ -129,4 +134,18 @@ STATIC_URL = 'static/'
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
-DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+AUTH_USER_MODEL = "api.Usuario"
+
+
+# +++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = 'mgarcia@fwdcostarica.com'
+EMAIL_HOST_PASSWORD = 'Marilyn2000.'
+DEFAULT_FROM_EMAIL = 'mgtechnology.crp@gmail.com'
+
