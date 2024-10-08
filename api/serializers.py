@@ -1,6 +1,6 @@
 from rest_framework.serializers import ModelSerializer
 
-from .models import Categoria, Modelo, Producto, Usuario
+from .models import Categoria, Modelo, Producto, Resena, Usuario
 
 
 class UsuarioSerializer(ModelSerializer):
@@ -10,6 +10,7 @@ class UsuarioSerializer(ModelSerializer):
         extra_kwargs = {"password": {"write_only": True}}
 
     def create(self, validated_data):
+        validated_data["rol_id"] = 3
         password = validated_data.pop("password", None)
         user = self.Meta.model(**validated_data)
 
@@ -32,7 +33,13 @@ class ModeloSerializer(ModelSerializer):
         fields = "__all__"
 
 
-class CategoriaSerializer(ModeloSerializer):
+class CategoriaSerializer(ModelSerializer):
     class Meta:
         model = Categoria
+        fields = "__all__"
+
+
+class ResenaSerializer(ModelSerializer):
+    class Meta:
+        model = Resena
         fields = "__all__"

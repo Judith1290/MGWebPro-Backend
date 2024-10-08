@@ -36,6 +36,10 @@ CORS_ALLOWED_ORIGINS = [
 CORS_ALLOW_CREDENTIALS = True
 
 # Application definition
+REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES": ["api.authentication.CookieAuthentication"],
+}
+
 
 INSTALLED_APPS = [
     "django.contrib.admin",

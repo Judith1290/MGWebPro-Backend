@@ -42,3 +42,12 @@ class Producto(models.Model):
     is_active = models.BooleanField(default=True)
     categoria = models.ForeignKey(Categoria, on_delete=models.PROTECT, null=True)
     modelo = models.ForeignKey(Modelo, on_delete=models.PROTECT, null=True)
+
+
+class Resena(models.Model):
+    resena_id = models.AutoField(primary_key=True)
+    comentario = models.TextField()
+    calificacion = models.IntegerField()
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+    user = models.ForeignKey(Usuario, on_delete=models.PROTECT, null=True)
+    producto = models.ForeignKey(Producto, on_delete=models.PROTECT, null=True)
