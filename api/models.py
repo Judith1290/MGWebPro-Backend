@@ -40,8 +40,8 @@ class Producto(models.Model):
     precio = models.IntegerField()
     stock = models.IntegerField()
     is_active = models.BooleanField(default=True)
-    categoria = models.ForeignKey(Categoria, on_delete=models.PROTECT, null=True)
-    modelo = models.ForeignKey(Modelo, on_delete=models.PROTECT, null=True)
+    categoria = models.ForeignKey(Categoria, on_delete=models.CASCADE, null=True)
+    modelo = models.ForeignKey(Modelo, on_delete=models.CASCADE, null=True)
 
 
 class Resena(models.Model):
@@ -49,5 +49,12 @@ class Resena(models.Model):
     comentario = models.TextField()
     calificacion = models.IntegerField()
     fecha_creacion = models.DateTimeField(auto_now_add=True)
-    user = models.ForeignKey(Usuario, on_delete=models.PROTECT, null=True)
-    producto = models.ForeignKey(Producto, on_delete=models.PROTECT, null=True)
+    user = models.ForeignKey(Usuario, on_delete=models.CASCADE, null=True)
+    producto = models.ForeignKey(Producto, on_delete=models.CASCADE, null=True)
+
+
+class Carrito(models.Model):
+    carrito_id = models.AutoField(primary_key=True)
+    cantidad = models.IntegerField()
+    user = models.ForeignKey(Usuario, on_delete=models.CASCADE, null=True)
+    producto = models.ForeignKey(Producto, on_delete=models.CASCADE, null=True)

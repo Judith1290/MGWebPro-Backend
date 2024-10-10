@@ -1,6 +1,6 @@
 from rest_framework.serializers import ModelSerializer
 
-from .models import Categoria, Modelo, Producto, Resena, Usuario
+from .models import Carrito, Categoria, Modelo, Producto, Resena, Usuario
 
 
 class DynamicFieldsModelSerializer(ModelSerializer):
@@ -67,4 +67,16 @@ class ResenaSerializer(ModelSerializer):
 
     class Meta:
         model = Resena
+        fields = "__all__"
+
+
+class CarritoSerializer(ModeloSerializer):
+    producto = ProductoSerializer(
+        required=False,
+        read_only=True,
+        fields=("producto_id", "producto_nombre", "imagen", "precio"),
+    )
+
+    class Meta:
+        model = Carrito
         fields = "__all__"

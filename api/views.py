@@ -13,8 +13,9 @@ from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnl
 from rest_framework.response import Response
 
 from .authentication import CookieAuthentication
-from .models import Categoria, Modelo, Producto, Resena, Usuario
+from .models import Carrito, Categoria, Modelo, Producto, Resena, Usuario
 from .serializers import (
+    CarritoSerializer,
     CategoriaSerializer,
     ModeloSerializer,
     ProductoSerializer,
@@ -227,5 +228,67 @@ def reviews_view(request, product_id=None, review_id=None):
             return Response(serializer.data, status=status.HTTP_200_OK)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
+
+
+@api_view(["POST"])
+@authentication_classes([CookieAuthentication])
+@permission_classes([IsAuthenticated])
+def add_to_cart_view(request, pk=None):
+    product = get_object_or_404(Producto, producto_id=pk)
+
+    if not product.is_active:
+        return Response(
+            {"detail": "This product is not available"},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    if (product.stock - request.data["cantidad"]) < 0:
+        return Response(
+            {"detail": f"There is not enough stock. ({product.stock} remaining)"},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    serializer = CarritoSerializer(data=request.data)
+    if serializer.is_valid():
+        serializer.save(producto_id=pk, user_id=request.user.user_id)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(["GET", "PATCH", "DELETE"])
+@authentication_classes([CookieAuthentication])
+@permission_classes([IsAuthenticated])
+def user_cart_view(request, pk=None):
+    if request.method == "GET":
+        if pk:
+            cart_product = get_object_or_404(
+                Carrito, carrito_id=pk, user_id=request.user.user_id
+            )
+            serializer = CarritoSerializer(instance=cart_product)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+        cart_products = Carrito.objects.filter(user_id=request.user.user_id)
+        serializer = CarritoSerializer(cart_products, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    elif request.method == "PATCH":
+        cart_product = get_object_or_404(
+            Carrito, carrito_id=pk, user_id=request.user.user_id
+        )
+
+        serializer = CarritoSerializer(cart_product, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    elif request.method == "DELETE":
+        cart_product = get_object_or_404(
+            Carrito, carrito_id=pk, user_id=request.user.user_id
+        )
+        cart_product.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
     return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
