@@ -22,6 +22,14 @@ from .serializers import (
     UsuarioSerializer,
 )
 
+import hashlib
+import hmac
+import time
+from django.http import JsonResponse
+from django.conf import settings
+from imagekitio import ImageKit
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
 
 @api_view(["POST"])
 def register_view(request):
@@ -229,3 +237,45 @@ def reviews_view(request, product_id=None, review_id=None):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
+
+
+@api_view(["GET"])
+def generate_imagekit_auth(request):
+  
+    imagekit = ImageKit(
+        # private_key=settings.IMAGEKIT_PRIVATE_KEY,
+        # public_key=settings.IMAGEKIT_PUBLIC_KEY,
+        # url_endpoint=settings.IMAGEKIT_URL_ENDPOINT
+        
+         private_key = 'private_vUdcFUmyKyVoaL8QNgLjrIIqfDg=' , 
+         public_key = 'public_jQbYnV75+ohlENFlgG1cAyQdQA4=' , 
+         url_endpoint =  'https://ik.imagekit.io/MGWebPro/'
+    )
+    
+     
+    auth_params = imagekit.get_authentication_parameters()
+
+    return Response(auth_params)
+
+@api_view(['PATCH', 'DELETE'])
+@authentication_classes([CookieAuthentication])
+@permission_classes([IsAuthenticatedOrReadOnly])
+def product_detail_view(request, pk):
+    producto = get_object_or_404(Producto, pk=pk)
+
+    if request.method == 'PATCH':
+        serializer = ProductoSerializer(producto, data=request.data, partial=True)
+        if serializer.is_valid():
+            usuario = request.user
+            if usuario.rol_id == 1:  # Solo admin puede editar
+                serializer.save()
+                return Response(serializer.data, status=status.HTTP_200_OK)
+            return Response({'detail': 'No tienes permiso para editar productos.'}, status=status.HTTP_403_FORBIDDEN)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    if request.method == 'DELETE':
+        usuario = request.user
+        if usuario.rol_id == 1:  # Solo admin puede eliminar
+            producto.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        return Response({'detail': 'No tienes permiso para eliminar productos.'}, status=status.HTTP_403_FORBIDDEN)

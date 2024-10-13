@@ -33,6 +33,12 @@ CORS_ALLOWED_ORIGINS = [
     "http://react_app:5173",
 ]
 
+CSRF_TRUSTED_ORIGINS = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "http://react_app:5173",
+]
+ 
 CORS_ALLOW_CREDENTIALS = True
 
 # Application definition
@@ -141,3 +147,8 @@ STATIC_URL = "static/"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 AUTH_USER_MODEL = "api.Usuario"
+
+
+# IMAGEKIT_PRIVATE_KEY = 'private_vUdcFUmyKyVoaL8QNgLjrIIqfDg='
+# IMAGEKIT_PUBLIC_KEY = 'public_jQbYnV75+ohlENFlgG1cAyQdQA4='
+# IMAGEKIT_URL_ENDPOINT = 'https://ik.imagekit.io/MGWebPro'
