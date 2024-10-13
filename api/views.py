@@ -279,3 +279,4 @@ def product_detail_view(request, pk):
             producto.delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
         return Response({'detail': 'No tienes permiso para eliminar productos.'}, status=status.HTTP_403_FORBIDDEN)
+    # actualizacion
