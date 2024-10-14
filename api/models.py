@@ -37,7 +37,7 @@ class Producto(models.Model):
     producto_nombre = models.CharField(max_length=150)
     producto_descripcion = models.TextField()
     # imagen = models.TextField()
-    imagen = models.URLField(max_length=500)
+    imagen = models.URLField(max_length=200, blank=True, null=True) 
     precio = models.IntegerField()
     stock = models.IntegerField()
     is_active = models.BooleanField(default=True)
