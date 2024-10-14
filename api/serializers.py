@@ -1,9 +1,30 @@
 from rest_framework.serializers import ModelSerializer
 
-from .models import Categoria, Modelo, Producto, Resena, Usuario
+from .models import Carrito, Categoria, Modelo, Producto, Resena, Usuario
 
 
-class UsuarioSerializer(ModelSerializer):
+class DynamicFieldsModelSerializer(ModelSerializer):
+    """
+    A ModelSerializer that takes an additional `fields` argument that
+    controls which fields should be displayed.
+    """
+
+    def __init__(self, *args, **kwargs):
+        # Don't pass the 'fields' arg up to the superclass
+        fields = kwargs.pop("fields", None)
+
+        # Instantiate the superclass normally
+        super().__init__(*args, **kwargs)
+
+        if fields is not None:
+            # Drop any fields that are not specified in the `fields` argument.
+            allowed = set(fields)
+            existing = set(self.fields)
+            for field_name in existing - allowed:
+                self.fields.pop(field_name)
+
+
+class UsuarioSerializer(DynamicFieldsModelSerializer):
     class Meta:
         model = Usuario
         fields = "__all__"
@@ -21,7 +42,7 @@ class UsuarioSerializer(ModelSerializer):
         return user
 
 
-class ProductoSerializer(ModelSerializer):
+class ProductoSerializer(DynamicFieldsModelSerializer):
     class Meta:
         model = Producto
         fields = "__all__"
@@ -40,6 +61,22 @@ class CategoriaSerializer(ModelSerializer):
 
 
 class ResenaSerializer(ModelSerializer):
+    user = UsuarioSerializer(
+        required=False, read_only=True, fields=("first_name", "last_name")
+    )
+
     class Meta:
         model = Resena
+        fields = "__all__"
+
+
+class CarritoSerializer(ModeloSerializer):
+    producto = ProductoSerializer(
+        required=False,
+        read_only=True,
+        fields=("producto_id", "producto_nombre", "imagen", "precio"),
+    )
+
+    class Meta:
+        model = Carrito
         fields = "__all__"
