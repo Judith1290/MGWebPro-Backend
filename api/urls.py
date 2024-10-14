@@ -1,5 +1,6 @@
 from django.urls import path
 
+
 from .views import (
     add_to_cart_view,
     login_view,
@@ -11,6 +12,7 @@ from .views import (
     reviews_view,
     user_cart_view,
     user_view,
+    generate_imagekit_auth
 )
 
 urlpatterns = [
@@ -29,4 +31,5 @@ urlpatterns = [
     path("model/<int:pk>/", products_models_view, name="model"),
     path("category/", products_categories_view, name="categories"),
     path("category/<int:pk>/", products_categories_view, name="category"),
+    path('imagekit-auth/', generate_imagekit_auth, name='imagekit_auth'),
 ]
