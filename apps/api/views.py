@@ -1,5 +1,6 @@
 import json
 
+from django.conf import settings
 from imagekitio import ImageKit
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
@@ -28,12 +29,12 @@ def enviar_correo(request):
      # Imprimir mensaje de depuración
         print("Procesando solicitud para enviar correo...")
 
-        # Configurar la clave de la API de Brevo
-        api_key = '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'  # Reemplaza con tu API Key válida de Brevo
+        # Configurar la clave de la API de Brevo  
+        key = settings.BREVO_SECRET_KEY
 
         # Crear una instancia de la API con la configuración
         configuration = sib_api_v3_sdk.Configuration()
-        configuration.api_key['api-key'] = api_key
+        configuration.api_key['api-key'] = key
 
         # Crear el cliente de la API
         api_instance = sib_api_v3_sdk.TransactionalEmailsApi(sib_api_v3_sdk.ApiClient(configuration))
@@ -46,10 +47,10 @@ def enviar_correo(request):
             email_destino = serializer.validated_data.get('email')
             contenido_html = serializer.validated_data.get('message')
 
-            # Configurar el contenido del correo
+            # # Configurar el contenido del correo
             email_origen = {
                 "name": "Prueba",
-                "email": "marijudith.garcia@gmail.com"  # Reemplaza con tu correo de origen
+                "email": "marijudith.garcia@gmail.com" 
             }
 
             send_smtp_email = sib_api_v3_sdk.SendSmtpEmail(
@@ -60,6 +61,7 @@ def enviar_correo(request):
             )
 
             try:
+                print("Enviando correo a:", email_destino)
                 # Llamada a la API para enviar el correo
                 api_response = api_instance.send_transac_email(send_smtp_email)
                 print("Respuesta de la API:", api_response)
@@ -69,6 +71,8 @@ def enviar_correo(request):
                 error_message = e.body if e.body else str(e)
                 print(f"Error al enviar correo: {error_message}")
                 return Response({"error": f"Error al enviar correo: {error_message}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        else:
+            print("Errores de validación:", serializer.errors)
 
         # Si los datos no son válidos, devolver errores de validación
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
