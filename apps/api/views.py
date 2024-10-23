@@ -1,5 +1,3 @@
-import json
-
 from django.conf import settings
 from imagekitio import ImageKit
 from rest_framework.decorators import api_view
@@ -12,13 +10,10 @@ from rest_framework import status
 
 @api_view(["GET"])
 def generate_imagekit_auth(request):
-    with open("secrets.json", "r") as file:
-        secrets = json.load(file)
-
     imagekit = ImageKit(
-        private_key=secrets["IMAGEKIT_PRIVATE_KEY"],
-        public_key=secrets["IMAGEKIT_PUBLIC_KEY"],
-        url_endpoint=secrets["IMAGEKIT_URL_ENDPOINT"],
+        private_key=settings.IMAGEKIT_PRIVATE_KEY,
+        public_key=settings.IMAGEKIT_PUBLIC_KEY,
+        url_endpoint=settings.IMAGEKIT_URL_ENDPOINT,
     )
 
     auth_params = imagekit.get_authentication_parameters()

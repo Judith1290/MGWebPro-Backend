@@ -13,11 +13,11 @@ class Modelo(models.Model):
 
 class Producto(models.Model):
     producto_id = models.AutoField(primary_key=True, unique=True)
-    producto_nombre = models.CharField(max_length=150)
-    producto_descripcion = models.TextField()
+    nombre = models.CharField(max_length=150)
+    descripcion = models.TextField()
     imagen = models.URLField(max_length=200, blank=True, null=True)
     precio = models.IntegerField()
     stock = models.IntegerField()
     is_active = models.BooleanField(default=True)
-    categoria = models.ForeignKey(Categoria, on_delete=models.CASCADE, null=True)
-    modelo = models.ForeignKey(Modelo, on_delete=models.CASCADE, null=True)
+    categoria = models.ForeignKey(Categoria, on_delete=models.SET_NULL, blank=True, null=True)
+    modelo = models.ForeignKey(Modelo, on_delete=models.SET_NULL, blank=True, null=True)
