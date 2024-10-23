@@ -10,7 +10,13 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 
+import os
 from pathlib import Path
+
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -28,12 +34,6 @@ DEBUG = True
 ALLOWED_HOSTS = []
 
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
-    "http://react_app:5173",
-]
-
-CSRF_TRUSTED_ORIGINS = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
     "http://react_app:5173",
@@ -61,6 +61,7 @@ INSTALLED_APPS = [
     "apps.inventory.apps.InventoryConfig",
     "apps.reviews.apps.ReviewsConfig",
     "apps.cart.apps.CartConfig",
+    "apps.payments.apps.PaymentsConfig",
 ]
 
 MIDDLEWARE = [
@@ -151,3 +152,17 @@ STATIC_URL = "static/"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 AUTH_USER_MODEL = "users.Usuario"
+
+# Keys
+
+IMAGEKIT_PRIVATE_KEY = os.getenv("IMAGEKIT_PRIVATE_KEY", default="")
+
+IMAGEKIT_PUBLIC_KEY = os.getenv("IMAGEKIT_PUBLIC_KEY", default="")
+
+IMAGEKIT_URL_ENDPOINT = os.getenv("IMAGEKIT_URL_ENDPOINT", default="")
+
+STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY", default="")
+
+STRIPE_PUBLIC_KEY = os.getenv("STRIPE_PUBLIC_KEY", default="")
+
+STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET", default="")
