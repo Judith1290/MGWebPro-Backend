@@ -65,6 +65,14 @@ def user_cart_view(request, pk=None):
             Carrito, carrito_id=pk, user_id=request.user.user_id
         )
 
+        product = get_object_or_404(Producto, producto_id=instance.producto.producto_id)
+        # se comprueba que haya stock suficiente.
+        if (product.stock - request.data["cantidad"]) < 0:
+            return Response(
+                {"detail": f"There is not enough stock. ({product.stock} remaining)"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         # se editan solamente los campos que se han recibido (cantidad, lol).
         serializer = CarritoSerializer(
             instance=instance, data=request.data, partial=True
