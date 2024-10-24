@@ -5,7 +5,7 @@ from rest_framework.decorators import (
     authentication_classes,
     permission_classes,
 )
-from rest_framework.permissions import IsAuthenticatedOrReadOnly
+from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
 from rest_framework.response import Response
 
 from ..api.authentication import CookieAuthentication
@@ -153,3 +153,19 @@ def products_categories_view(request, pk=None):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
+
+
+@api_view(["POST"])
+@authentication_classes([CookieAuthentication])
+@permission_classes([IsAuthenticated])
+def change_product_status_view(request, pk):
+    if request.user.rol_id not in (1, 2):
+        return Response(
+            {"detail": "You do not have permissions to perform this action."},
+            status=status.HTTP_403_FORBIDDEN,
+        )
+
+    product = get_object_or_404(Producto, producto_id=pk)
+    product.is_active = not product.is_active
+    product.save()
+    return Response(status=status.HTTP_200_OK)
