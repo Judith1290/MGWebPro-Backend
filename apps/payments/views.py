@@ -1,8 +1,9 @@
+import ast
 import uuid
 
 import stripe
 from django.conf import settings
-from django.shortcuts import get_object_or_404, redirect
+from django.shortcuts import redirect
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework import status
 from rest_framework.decorators import (
@@ -34,38 +35,55 @@ def user_payments_view(request):
 @permission_classes([IsAuthenticated])
 def stripe_checkout_view(request):
     stripe.api_key = settings.STRIPE_SECRET_KEY
+    # Objetos de carrito que estén relacionados al usuario logeado.
+    cart_items = Carrito.objects.filter(user_id=request.user.user_id)
+    # Lista con datos para uso logico. No se incluyen productos que tengan un estado de "inactivo".
+    purchase_data = [
+        {
+            "cart_id": item.carrito_id,
+            "product_id": item.producto.producto_id,
+            "quantity": item.cantidad,
+        }
+        for item in cart_items
+        if item.producto.is_active
+    ]
+    # Lista con lo datos necesarios para realizar el pago por stripe. No se incluyen productos que tengan un estado de "inactivo".
+    line_items = [
+        {
+            "price_data": {
+                "currency": "crc",
+                "unit_amount": item.producto.precio * 100,
+                "product_data": {
+                    "name": item.producto.nombre,
+                    "description": item.producto.descripcion,
+                    "images": [item.producto.imagen],
+                },
+            },
+            "quantity": item.cantidad,
+        }
+        for item in cart_items
+        if item.producto.is_active
+    ]
 
-    product = get_object_or_404(Producto, producto_id=request.data["producto_id"])
-    if (product.stock - request.data["cantidad"]) < 0 or not product.is_active:
-        return Response(
-            {"detail": "There is not enough stock or the product is not available."},
-            status=status.HTTP_400_BAD_REQUEST,
-        )
+    # Antes de realizar la compra se comprueba que haya suficiente stock de los productos solicitados.
+    for e in purchase_data:
+        product = Producto.objects.get(producto_id=e["product_id"])
+        if product.stock - e["quantity"] < 0:
+            return Response(
+                {
+                    "detail": f"{product.nombre} does not have enough stock. ({product.stock} remaining)"
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
     try:
         checkout_session = stripe.checkout.Session.create(
             payment_method_types=["card"],
-            line_items=[
-                {
-                    "price_data": {
-                        "currency": "crc",
-                        "unit_amount": product.precio * 100,
-                        "product_data": {
-                            "name": product.nombre,
-                            "description": product.descripcion,
-                            "images": [product.imagen],
-                        },
-                    },
-                    "quantity": request.data["cantidad"],
-                },
-            ],
+            line_items=line_items,
+            customer_email=request.user.email,
             metadata={
                 "user_id": str(request.user.user_id),
-                "product_id": product.producto_id,
-                "quantity": request.data["cantidad"],
-                "cart_id": request.data["carrito_id"]
-                if "carrito_id" in request.data
-                else "",
+                "purchase_data": str(purchase_data),
             },
             mode="payment",
             success_url="http://localhost:5173/" + "?success=true",
@@ -98,22 +116,23 @@ def stripe_webhook(request):
     if event["type"] == "checkout.session.completed":
         session = event["data"]["object"]
         metadata = session["metadata"]
-
-        if metadata["cart_id"]:
-            cart = get_object_or_404(Carrito, carrito_id=int(metadata["cart_id"]))
-            cart.delete()
+        purchase_data = ast.literal_eval(metadata["purchase_data"])
 
         data = {
             "user": uuid.UUID(metadata["user_id"]),
-            "stripe_checkout_id": session["payment_intent"],
-            "cantidad": int(metadata["quantity"]),
+            "payment_intent_id": session["payment_intent"],
+            "subtotal": session["amount_subtotal"] / 100,
         }
         serializer = PagoSerializer(data=data)
         if serializer.is_valid():
-            serializer.save(producto_id=int(metadata["product_id"]))
+            serializer.save()
 
-        product = get_object_or_404(Producto, producto_id=metadata["product_id"])
-        product.stock = product.stock - int(metadata["quantity"])
-        product.save()
+        for e in purchase_data:
+            product = Producto.objects.get(producto_id=e["product_id"])
+            product.stock = product.stock - e["quantity"]
+            product.save()
+
+            cart = Carrito.objects.get(carrito_id=e["cart_id"])
+            cart.delete()
 
     return Response(status=status.HTTP_200_OK)
