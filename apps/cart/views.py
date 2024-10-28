@@ -14,6 +14,7 @@ from .models import Carrito
 from .serializers import CarritoSerializer
 
 
+# función toda chapucera, podría hacerla mejor, pero no me da tiempo; malditos sean los carritos y su logica.
 @api_view(["POST"])
 @authentication_classes([CookieAuthentication])
 @permission_classes([IsAuthenticated])
@@ -26,6 +27,21 @@ def add_to_cart_view(request, pk=None):
             {"detail": "This product is not available"},
             status=status.HTTP_400_BAD_REQUEST,
         )
+
+    try:
+        cart = Carrito.objects.get(user_id=request.user.user_id, producto_id=pk)
+    except Carrito.DoesNotExist:
+        cart = None
+    if cart:
+        # se comprueba que haya stock suficiente.
+        if (product.stock - (cart.cantidad + request.data["cantidad"])) < 0:
+            return Response(
+                {"detail": f"There is not enough stock. ({product.stock} remaining)"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        cart.cantidad = cart.cantidad + request.data["cantidad"]
+        cart.save()
+        return Response(status=status.HTTP_200_OK)
 
     # se comprueba que haya stock suficiente.
     if (product.stock - request.data["cantidad"]) < 0:
