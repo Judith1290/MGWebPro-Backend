@@ -28,7 +28,9 @@ def create_default_models(sender, **kwargs):
 
 @receiver(pre_save, sender=Producto)
 def update_product_status(sender, instance, **kwargs):
-    if instance.stock == 0:
-        instance.is_active = False
-    else:
-        instance.is_active = True
+    if instance.pk:
+        original = Producto.objects.get(producto_id=instance.pk)
+        if original.stock and instance.stock == 0:
+            instance.is_active = False
+        elif original.stock == 0 and instance.stock > 0:
+            instance.is_active = True
