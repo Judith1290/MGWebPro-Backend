@@ -1,7 +1,7 @@
-from django.db.models.signals import post_migrate
+from django.db.models.signals import post_migrate, pre_save
 from django.dispatch import receiver
 
-from .models import Categoria, Modelo
+from .models import Categoria, Modelo, Producto
 
 
 @receiver(post_migrate)
@@ -24,3 +24,11 @@ def create_default_models(sender, **kwargs):
         Modelo.objects.get_or_create(nombre_modelo="Huawei")
         Modelo.objects.get_or_create(nombre_modelo="iPhone")
         Modelo.objects.get_or_create(nombre_modelo="Xiaomi")
+
+
+@receiver(pre_save, sender=Producto)
+def update_product_status(sender, instance, **kwargs):
+    if instance.stock == 0:
+        instance.is_active = False
+    else:
+        instance.is_active = True
