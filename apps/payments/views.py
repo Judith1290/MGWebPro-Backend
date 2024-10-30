@@ -3,7 +3,7 @@ import uuid
 
 import stripe
 from django.conf import settings
-from django.shortcuts import redirect
+from django.shortcuts import get_object_or_404
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework import status
 from rest_framework.decorators import (
@@ -35,35 +35,60 @@ def user_payments_view(request):
 @permission_classes([IsAuthenticated])
 def stripe_checkout_view(request):
     stripe.api_key = settings.STRIPE_SECRET_KEY
-    # Objetos de carrito que estén relacionados al usuario logeado.
-    cart_items = Carrito.objects.filter(user_id=request.user.user_id)
-    # Lista con datos para uso logico. No se incluyen productos que tengan un estado de "inactivo".
-    purchase_data = [
-        {
-            "cart_id": item.carrito_id,
-            "product_id": item.producto.producto_id,
-            "quantity": item.cantidad,
-        }
-        for item in cart_items
-        if item.producto.is_active
-    ]
-    # Lista con lo datos necesarios para realizar el pago por stripe. No se incluyen productos que tengan un estado de "inactivo".
-    line_items = [
-        {
-            "price_data": {
-                "currency": "crc",
-                "unit_amount": item.producto.precio * 100,
-                "product_data": {
-                    "name": item.producto.nombre,
-                    "description": item.producto.descripcion,
-                    "images": [item.producto.imagen],
+    global purchase_data
+    global line_items
+
+    if request.data:  # pago directo
+        product = get_object_or_404(Producto, producto_id=request.data["producto"])
+        if not product.is_active:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+        purchase_data = [
+            {"product_id": product.producto_id, "quantity": request.data["cantidad"]}
+        ]
+        line_items = [
+            {
+                "price_data": {
+                    "currency": "crc",
+                    "unit_amount": product.precio * 100,
+                    "product_data": {
+                        "name": product.nombre,
+                        "description": product.descripcion,
+                        "images": [product.imagen],
+                    },
                 },
-            },
-            "quantity": item.cantidad,
-        }
-        for item in cart_items
-        if item.producto.is_active
-    ]
+                "quantity": request.data["cantidad"],
+            }
+        ]
+    else:  # pago de carrito
+        # Objetos de carrito que estén relacionados al usuario logeado.
+        cart_items = Carrito.objects.filter(user_id=request.user.user_id)
+        # Lista con datos para uso logico. No se incluyen productos que tengan un estado de "inactivo".
+        purchase_data = [
+            {
+                "cart_id": item.carrito_id,
+                "product_id": item.producto.producto_id,
+                "quantity": item.cantidad,
+            }
+            for item in cart_items
+            if item.producto.is_active
+        ]
+        # Lista con lo datos necesarios para realizar el pago por stripe. No se incluyen productos que tengan un estado de "inactivo".
+        line_items = [
+            {
+                "price_data": {
+                    "currency": "crc",
+                    "unit_amount": item.producto.precio * 100,
+                    "product_data": {
+                        "name": item.producto.nombre,
+                        "description": item.producto.descripcion,
+                        "images": [item.producto.imagen],
+                    },
+                },
+                "quantity": item.cantidad,
+            }
+            for item in cart_items
+            if item.producto.is_active
+        ]
 
     # Antes de realizar la compra se comprueba que haya suficiente stock de los productos solicitados.
     for e in purchase_data:
@@ -95,7 +120,7 @@ def stripe_checkout_view(request):
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
 
-    return redirect(checkout_session.url)
+    return Response(checkout_session.url)
 
 
 @csrf_exempt
@@ -132,7 +157,8 @@ def stripe_webhook(request):
             product.stock = product.stock - e["quantity"]
             product.save()
 
-            cart = Carrito.objects.get(carrito_id=e["cart_id"])
-            cart.delete()
+            if "cart_id" in e:
+                cart = Carrito.objects.get(carrito_id=e["cart_id"])
+                cart.delete()
 
     return Response(status=status.HTTP_200_OK)
