@@ -30,7 +30,7 @@ def create_default_models(sender, **kwargs):
 def update_product_status(sender, instance, **kwargs):
     if instance.pk:
         original = Producto.objects.get(producto_id=instance.pk)
-        if original.stock and instance.stock == 0:
+        if original.stock > 0 and instance.stock == 0:
             instance.is_active = False
         elif original.stock == 0 and instance.stock > 0:
             instance.is_active = True
