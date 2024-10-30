@@ -4,7 +4,6 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 import sib_api_v3_sdk 
 from sib_api_v3_sdk.rest import ApiException
-from pprint import pprint
 from .serializers.contact import ContactSerializer
 from rest_framework import status
 
@@ -21,7 +20,7 @@ def generate_imagekit_auth(request):
 
 @api_view(["POST"])
 def enviar_correo(request):
-     # Imprimir mensaje de depuración
+    # Imprimir mensaje de depuración
         print("Procesando solicitud para enviar correo...")
 
         # Configurar la clave de la API de Brevo  
