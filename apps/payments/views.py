@@ -1,5 +1,4 @@
 import ast
-import uuid
 
 import stripe
 from django.conf import settings
@@ -13,20 +12,25 @@ from rest_framework.decorators import (
 )
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from utils.email_utils import send_email
+from utils.file_utils import create_pdf
 
 from ..api.authentication import CookieAuthentication
 from ..cart.models import Carrito
 from ..inventory.models import Producto
-from .models import Pago
-from .serializers import PagoSerializer
+from .models import Factura
+from .serializers import (
+    FacturaSerializer,
+)
+from .utils import create_invoice, update_products_and_cart_items
 
 
 @api_view(["GET"])
 @authentication_classes([CookieAuthentication])
 @permission_classes([IsAuthenticated])
 def user_payments_view(request):
-    instance = Pago.objects.filter(user_id=request.user.user_id)
-    serializer = PagoSerializer(instance=instance, many=True)
+    instance = Factura.objects.filter(user_id=request.user.user_id)
+    serializer = FacturaSerializer(instance=instance, many=True)
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 
@@ -143,22 +147,29 @@ def stripe_webhook(request):
         metadata = session["metadata"]
         purchase_data = ast.literal_eval(metadata["purchase_data"])
 
-        data = {
-            "user": uuid.UUID(metadata["user_id"]),
-            "payment_intent_id": session["payment_intent"],
-            "subtotal": session["amount_subtotal"] / 100,
+        invoice_id = create_invoice(
+            metadata=metadata, payment_intent=session["payment_intent"]
+        )
+        invoice = Factura.objects.get(id=invoice_id)
+        invoice_items = invoice.productos.all()
+
+        context = {
+            "invoice": invoice,
+            "items": invoice_items,
+            "subtotal": sum([item.precio * item.cantidad for item in invoice_items]),
         }
-        serializer = PagoSerializer(data=data)
-        if serializer.is_valid():
-            serializer.save()
+        pdf = create_pdf(template="invoice.html", context=context)
+        send_email(
+            to=[
+                {"email": settings.SENDER_EMAIL},
+                {"email": session["customer_details"]["email"]},
+            ],
+            subject="Detalles del pedido",
+            html_content="Gracias por su compra",
+            attachment=pdf,
+            attch_name="factura.pdf",
+        )
 
-        for e in purchase_data:
-            product = Producto.objects.get(producto_id=e["product_id"])
-            product.stock = product.stock - e["quantity"]
-            product.save()
-
-            if "cart_id" in e:
-                cart = Carrito.objects.get(carrito_id=e["cart_id"])
-                cart.delete()
+        update_products_and_cart_items(purchase_data=purchase_data)
 
     return Response(status=status.HTTP_200_OK)

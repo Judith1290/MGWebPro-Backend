@@ -1,6 +1,6 @@
 from rest_framework.serializers import ModelSerializer
 
-from ..api.utils import DynamicFieldsModelSerializer
+from utils.serializers import DynamicFieldsModelSerializer
 from .models import Categoria, Modelo, Producto
 
 

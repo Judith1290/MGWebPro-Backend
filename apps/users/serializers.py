@@ -1,4 +1,4 @@
-from ..api.utils import DynamicFieldsModelSerializer
+from utils.serializers import DynamicFieldsModelSerializer
 from .models import Usuario
 
 
