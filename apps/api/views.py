@@ -1,11 +1,12 @@
 from django.conf import settings
 from imagekitio import ImageKit
+from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
-import sib_api_v3_sdk 
-from sib_api_v3_sdk.rest import ApiException
+from utils.email_utils import send_email
+
 from .serializers.contact import ContactSerializer
-from rest_framework import status
+
 
 @api_view(["GET"])
 def generate_imagekit_auth(request):
@@ -18,55 +19,27 @@ def generate_imagekit_auth(request):
     auth_params = imagekit.get_authentication_parameters()
     return Response(auth_params)
 
+
 @api_view(["POST"])
 def enviar_correo(request):
-    # Imprimir mensaje de depuración
-        print("Procesando solicitud para enviar correo...")
+    # Serializar los datos del request
+    serializer = ContactSerializer(data=request.data)
+    if serializer.is_valid():
+        # Obtener los datos del request
+        email_destino = serializer.validated_data.get("email")
+        contenido_html = serializer.validated_data.get("message")
 
-        # Configurar la clave de la API de Brevo  
-        key = settings.BREVO_SECRET_KEY
+        response = send_email(
+            to=[{"email": settings.SENDER_EMAIL}],
+            reply_to=email_destino,
+            subject="Contacto",
+            html_content=contenido_html,
+        )
 
-        # Crear una instancia de la API con la configuración
-        configuration = sib_api_v3_sdk.Configuration()
-        configuration.api_key['api-key'] = key
+        if "message" in response:
+            return Response(response, status=status.HTTP_200_OK)
+        elif "error" in response:
+            return Response(response, status=status.HTTP_400_BAD_REQUEST)
 
-        # Crear el cliente de la API
-        api_instance = sib_api_v3_sdk.TransactionalEmailsApi(sib_api_v3_sdk.ApiClient(configuration))
-
-        # Serializar los datos del request
-        serializer = ContactSerializer(data=request.data)
-
-        if serializer.is_valid():
-            # Obtener los datos del request
-            email_destino = serializer.validated_data.get('email')
-            contenido_html = serializer.validated_data.get('message')
-
-            # # Configurar el contenido del correo
-            email_origen = {
-                "name": "Prueba",
-                "email": "marijudith.garcia@gmail.com" 
-            }
-
-            send_smtp_email = sib_api_v3_sdk.SendSmtpEmail(
-                to=[{"email": email_destino}],
-                sender=email_origen,
-                subject="Asunto",
-                html_content=contenido_html
-            )
-
-            try:
-                print("Enviando correo a:", email_destino)
-                # Llamada a la API para enviar el correo
-                api_response = api_instance.send_transac_email(send_smtp_email)
-                print("Respuesta de la API:", api_response)
-                return Response({"message": "Correo enviado con éxito"}, status=status.HTTP_200_OK)
-            except ApiException as e:
-                # Capturar y mostrar el error detallado
-                error_message = e.body if e.body else str(e)
-                print(f"Error al enviar correo: {error_message}")
-                return Response({"error": f"Error al enviar correo: {error_message}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        else:
-            print("Errores de validación:", serializer.errors)
-
-        # Si los datos no son válidos, devolver errores de validación
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    # Si los datos no son válidos, devolver errores de validación
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

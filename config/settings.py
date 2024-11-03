@@ -48,6 +48,7 @@ REST_FRAMEWORK = {
 
 
 INSTALLED_APPS = [
+    "django.contrib.humanize",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -111,9 +112,6 @@ DATABASES = {
 }
 
 
-
-#
-
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
 
@@ -157,8 +155,10 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 AUTH_USER_MODEL = "users.Usuario"
 
-# Keys
+# Secrets
 BREVO_SECRET_KEY = os.getenv("BREVO_SECRET_KEY", default="")
+
+SENDER_EMAIL = os.getenv("SENDER_EMAIL", default="")
 
 IMAGEKIT_PRIVATE_KEY = os.getenv("IMAGEKIT_PRIVATE_KEY", default="")
 
