@@ -158,6 +158,8 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 AUTH_USER_MODEL = "users.Usuario"
 
 # Secrets
+REDIRECT_URL = os.getenv("REDIRECT_URL", default="")
+
 BREVO_SECRET_KEY = os.getenv("BREVO_SECRET_KEY", default="")
 
 SENDER_EMAIL = os.getenv("SENDER_EMAIL", default="")
