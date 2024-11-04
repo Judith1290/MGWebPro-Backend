@@ -115,8 +115,8 @@ def stripe_checkout_view(request):
                 "purchase_data": str(purchase_data),
             },
             mode="payment",
-            success_url="http://localhost:5173/confirmacion/" + "?success=true",
-            cancel_url="http://localhost:5173/confirmacion/" + "?canceled=true",
+            success_url=settings.REDIRECT_URL + "?success=true",
+            cancel_url=settings.REDIRECT_URL + "?canceled=true",
         )
     except Exception:
         return Response(
