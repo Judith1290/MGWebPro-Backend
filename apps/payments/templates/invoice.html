@@ -1,0 +1,99 @@
+{% load humanize %}
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Invoice</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 15px;
+      }
+      th,
+      td {
+        border: 1px solid #ddd;
+        padding: 6px;
+        text-align: left;
+      }
+      th {
+        background-color: #f2f2f2;
+      }
+      tfoot td {
+        font-weight: bold;
+      }
+      footer {
+        text-align: center;
+        font-size: 1em;
+        color: #555;
+      }
+      .header-table {
+        margin-top: 10px;
+      }
+      .header-title {
+        background-color: #f2f2f2;
+        text-align: center;
+      }
+    </style>
+  </head>
+  <body>
+    <h2>MG Technology</h2>
+    <div>
+      <table class="header-table">
+        <tbody>
+          <tr>
+            <th>Cliente</th>
+            <th>Correo Electronico</th>
+          </tr>
+          <tr>
+            <td>{{ invoice.user.get_full_name}}</td>
+            <td>{{ invoice.user.email }}</td>
+          </tr>
+          <tr>
+            <th>ID Factura</th>
+            <th>Fecha de Emision</th>
+          </tr>
+          <tr>
+            <td>{{ invoice.payment_intent_id }}</td>
+            <td>{{ invoice.fecha_creacion }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>Producto</th>
+          <th>Cantidad</th>
+          <th>Precio</th>
+          <th>Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in items %}
+        <tr>
+          <td>{{ item.producto.nombre }}</td>
+          <td>{{ item.cantidad }}</td>
+          <td>${{ item.precio|intcomma }}</td>
+          <td>${{ item.get_total|intcomma }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+      <tfoot>
+        <tr>
+          <td colspan="3">Subtotal</td>
+          <td>${{ subtotal|intcomma }}</td>
+        </tr>
+      </tfoot>
+    </table>
+    <footer>
+      <p>Gracias por su compra.</p>
+      <p>Contacto: marijudith.garcia@gmail.com | Telefono: 6158-1636</p>
+    </footer>
+  </body>
+</html>
